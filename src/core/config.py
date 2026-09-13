@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     upload_dir: str = str(BASE_DIR/"uploads")
     ingest_kb_dir: str = str(BASE_DIR/"data"/"ingest_kb")
 
+    langchain_tracing_v2: bool = True
+    langchain_api_key: str
+    langchain_project: str = "SupportIQ"
+    langchain_endpoint: str = "https://api.smith.langchain.com"
+
     model_config = SettingsConfigDict(env_file=str(BASE_DIR/".env"),extra="ignore")
 
 
