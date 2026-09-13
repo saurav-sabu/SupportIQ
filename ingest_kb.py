@@ -6,7 +6,7 @@ from src.rag.vectorstore import add_documents
 settings = get_settings()
 
 data_folder = Path(settings.ingest_kb_dir)
-files = [file for file in data_folder.iterdir() if file.is_file()]
+files = [file for file in data_folder.iterdir() if file.is_file() and file.suffix.lower() in {".pdf", ".txt", ".md"}]
 
 all_docs = []
 

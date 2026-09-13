@@ -12,7 +12,8 @@ def load_file(path: Path):
     if suffix == ".pdf":
         return PyPDFLoader(str(path)).load()
     if suffix in {".txt", ".md"}:
-        return TextLoader(str(path)).load()
+        return TextLoader(str(path), encoding="utf-8").load()
+
     raise ValueError(f"Unsupported file format: {suffix}. Supported formats: {', '.join(SUPPORTED_FILE_TYPES)}")
 
 def chunk_documents(docs):

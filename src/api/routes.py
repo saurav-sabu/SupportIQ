@@ -38,19 +38,48 @@ def stats():
         "admin_api_key": settings.admin_api_key
     }
 
+import time
+from src.services.audit import log_audit, get_audit_logs
+
 @router.post("/chat")
 def chat_with_agent(request: ChatRequest):
+    start_time = time.time()
     try:
         response = ask(request.question)
+        latency_ms = int((time.time() - start_time) * 1000)
+
+        answer = response.get("answer", "")
+        source_used = response.get("source_used", "direct")
+        citations = response.get("citations", [])
+        rewritten_query = response.get("current_query", request.question)
+
+        # Record basic audit log
+        log_audit(
+            question=request.question,
+            answer=answer,
+            source_used=source_used,
+            latency_ms=latency_ms
+        )
+
         return {
-            "answer": response.get("answer", ""),
-            "source_used": response.get("source_used", "direct"),
-            "citations": response.get("citations", []),
-            "rewritten_query": response.get("current_query", request.question),
+            "answer": answer,
+            "source_used": source_used,
+            "citations": citations,
+            "rewritten_query": rewritten_query,
         }
     except Exception as e:
+        latency_ms = int((time.time() - start_time) * 1000)
         logger.error(f"Error during agent invocation: {e}", exc_info=True)
         err_str = str(e)
+
+        # Record error in audit log
+        log_audit(
+            question=request.question,
+            answer=f"Error: {err_str}",
+            source_used="error",
+            latency_ms=latency_ms
+        )
+
         if "rate_limit" in err_str.lower() or "429" in err_str or "quota" in err_str.lower():
             return {
                 "answer": f"**System Advisory: API Rate Limit Encountered**\n\nThe LLM service reported: `{err_str}`\n\nPlease retry in a moment. SupportIQ uses Groq (`{settings.groq_model}`) and Pinecone for real-time grounded inference.",
@@ -59,6 +88,17 @@ def chat_with_agent(request: ChatRequest):
                 "rewritten_query": request.question
             }
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/audit/logs")
+def list_audit_logs(limit: int = 50):
+    logs, db_provider = get_audit_logs(limit=limit)
+    return {
+        "logs": logs,
+        "db_type": db_provider,
+        "count": len(logs)
+    }
+
+
 
 @router.get("/kb/documents")
 def list_documents():

@@ -74,6 +74,9 @@
     adminApiKeyInput: document.getElementById('admin-api-key-input'),
     toggleKeyVisibility: document.getElementById('toggle-key-visibility'),
     saveAdminKeyBtn: document.getElementById('save-admin-key-btn'),
+    auditTableBody: document.getElementById('audit-table-body'),
+    auditDbPill: document.getElementById('audit-db-pill'),
+    refreshAuditBtn: document.getElementById('refresh-audit-btn'),
 
     // Citation Modal
     citationModalOverlay: document.getElementById('citation-modal-overlay'),
@@ -140,6 +143,11 @@
     };
     elements.breadcrumbTitle.textContent = titles[tabId] || 'Workspace';
 
+    // If navigating to diagnostics, refresh audit logs
+    if (tabId === 'diagnostics') {
+      loadAuditLogs();
+    }
+
     // On mobile, close sidebar after clicking
     if (window.innerWidth < 680) {
       elements.sidebar.classList.remove('open');
@@ -175,12 +183,92 @@
         if (elements.diagRetries) elements.diagRetries.textContent = `${stats.max_retries || 1} Loop`;
         if (elements.diagEnv) elements.diagEnv.textContent = stats.app_env || 'development';
       }
+
+      // Refresh Audit Logs alongside health check
+      loadAuditLogs();
     } catch (err) {
       elements.globalStatusDot.className = 'status-dot offline';
       elements.globalStatusText.textContent = 'Backend Disconnected';
       elements.pingLatency.textContent = '--';
     }
   }
+
+  async function loadAuditLogs() {
+    if (!elements.auditTableBody) return;
+    try {
+      const res = await fetch('/api/audit/logs?limit=50');
+      if (!res.ok) throw new Error('Failed to fetch audit records');
+      const data = await res.json();
+
+      if (elements.auditDbPill && data.db_type) {
+        elements.auditDbPill.textContent = `Database: ${data.db_type}`;
+      }
+
+      const logs = data.logs || [];
+      if (logs.length === 0) {
+        elements.auditTableBody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
+              No audit logs recorded yet. Submit an incident query in the Chat Console to generate records.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      elements.auditTableBody.innerHTML = '';
+      logs.forEach((log) => {
+        const tr = document.createElement('tr');
+
+        // Format timestamp
+        let formattedTime = log.timestamp;
+        try {
+          const d = new Date(log.timestamp);
+          if (!isNaN(d.getTime())) {
+            formattedTime = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          }
+        } catch (_) {}
+
+        // Source badge class
+        let srcClass = 'direct';
+        let srcLabel = log.source_used || 'direct';
+        if (srcLabel === 'private_kb') {
+          srcClass = 'kb';
+          srcLabel = 'KB Runbook';
+        } else if (srcLabel === 'web') {
+          srcClass = 'web';
+          srcLabel = 'Web Search';
+        } else if (srcLabel === 'direct') {
+          srcClass = 'direct';
+          srcLabel = 'Direct LLM';
+        } else if (srcLabel === 'error') {
+          srcClass = 'error';
+          srcLabel = 'Error';
+        }
+
+        tr.innerHTML = `
+          <td class="audit-id">#${log.id}</td>
+          <td class="audit-time">${escapeHtml(formattedTime)}</td>
+          <td><span class="audit-source-pill ${srcClass}">${escapeHtml(srcLabel)}</span></td>
+          <td class="audit-latency">${log.latency_ms || 0}ms</td>
+          <td>
+            <div class="audit-query-preview">${escapeHtml(log.question)}</div>
+            <div class="audit-answer-preview">${escapeHtml(log.answer)}</div>
+          </td>
+        `;
+        elements.auditTableBody.appendChild(tr);
+      });
+    } catch (err) {
+      elements.auditTableBody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; color: var(--accent-rose); padding: 18px;">
+            Error loading audit logs: ${escapeHtml(err.message)}
+          </td>
+        </tr>
+      `;
+    }
+  }
+
 
   /* ==========================================================================
      Chat Console Logic
@@ -763,8 +851,12 @@
       renderDocumentsGrid(filtered);
     });
 
-    // Diagnostics Refresh
+    // Diagnostics & Audit Refresh
     elements.refreshDiagBtn.addEventListener('click', checkHealthAndStats);
+    if (elements.refreshAuditBtn) {
+      elements.refreshAuditBtn.addEventListener('click', loadAuditLogs);
+    }
+
 
     // Admin Key Settings
     elements.adminApiKeyInput.value = state.adminApiKey;

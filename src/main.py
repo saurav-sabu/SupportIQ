@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import get_settings
+from src.core.logging import configure_logging
 from src.api.routes import router as api_router
 
 settings = get_settings()
@@ -18,6 +19,9 @@ app = FastAPI(
     description="Agentic RAG IT Support system with LangGraph, Pinecone, and Tavily web fallback.",
     version="1.0.0"
 )
+
+# Initialize standard logging and Pydantic Logfire observability
+configure_logging(app)
 
 app.add_middleware(
     CORSMiddleware,

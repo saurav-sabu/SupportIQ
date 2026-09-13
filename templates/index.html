@@ -591,6 +591,50 @@
             </div>
           </div>
 
+          <!-- Audit Logs Section -->
+          <div class="audit-logs-card">
+            <div class="audit-header-row">
+              <div>
+                <h3 class="admin-settings-title">Basic Audit Logs</h3>
+                <p class="admin-settings-sub">
+                  Lightweight query & inference telemetry tracking user questions, generated responses, routing sources, and latency.
+                </p>
+              </div>
+              <div class="audit-badge-group">
+                <span class="audit-db-pill" id="audit-db-pill">Database: NeonDB (PostgreSQL)</span>
+                <button class="action-btn" id="refresh-audit-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                  </svg>
+                  <span>Refresh Logs</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="audit-table-wrapper">
+              <table class="audit-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th style="width: 160px;">Timestamp</th>
+                    <th style="width: 120px;">Source</th>
+                    <th style="width: 90px;">Latency</th>
+                    <th>Query & Response Preview</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                      Loading recent audit records...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Configuration Settings Card -->
           <div class="admin-settings-card">
             <h3 class="admin-settings-title">Admin API Authentication</h3>
