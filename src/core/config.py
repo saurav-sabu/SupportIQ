@@ -14,9 +14,10 @@ class Settings(BaseSettings):
     pinecone_namespace: str
     embedding_model: str
     groq_model: str
+    google_api_key:str
     top_k: int = 4
     max_retries: int = 1
-    admin_api_key:str
+    admin_api_key:str = ""
     audit_db_path: str = str(BASE_DIR/"data"/"audit.db")
     upload_dir: str = str(BASE_DIR/"uploads")
     ingest_kb_dir: str = str(BASE_DIR/"data"/"ingest_kb")
