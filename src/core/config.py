@@ -17,13 +17,13 @@ class Settings(BaseSettings):
     google_api_key:str
     top_k: int = 4
     max_retries: int = 1
-    admin_api_key:str = ""
+    admin_api_key: str = "supportiq-admin-2026"
     audit_db_path: str = str(BASE_DIR/"data"/"audit.db")
     upload_dir: str = str(BASE_DIR/"uploads")
     ingest_kb_dir: str = str(BASE_DIR/"data"/"ingest_kb")
 
     langchain_tracing_v2: bool = True
-    langchain_api_key: str
+    langchain_api_key: str = ""
     langchain_project: str = "SupportIQ"
     langchain_endpoint: str = "https://api.smith.langchain.com"
 

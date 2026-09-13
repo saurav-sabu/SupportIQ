@@ -1,3 +1,4 @@
+from pathlib import Path
 from langchain_groq import ChatGroq
 from langchain_tavily import TavilySearch
 from typing import Literal
@@ -32,10 +33,10 @@ def web_search_tool():
         if not settings.tavily_api_key:
             raise ValueError("Tavily API key must be set in the environment variables.")
         _web_search = TavilySearch(
-            api_key=settings.tavily_api_key,
-            num_results=5,
+            tavily_api_key=settings.tavily_api_key,
+            max_results=5,
             topic="general",
-            include_answers=True,
+            include_answer=True,
             include_raw_content=True,
         )
     return _web_search
@@ -232,9 +233,22 @@ Private KB context:
 {context}
 """).content.strip()
 
+    citations = []
+    for doc in state.get("kb_docs", []):
+        src_path = doc.metadata.get("source", "")
+        file_name = Path(src_path).name if src_path else "Internal IT Runbook"
+        page = doc.metadata.get("page", 1)
+        snippet = doc.page_content[:260].strip() + ("..." if len(doc.page_content) > 260 else "")
+        citations.append({
+            "source": file_name,
+            "page": page,
+            "snippet": snippet
+        })
+
     return {
-        "answer":answer,
-        "source_used":"private_kb"
+        "answer": answer,
+        "source_used": "private_kb",
+        "citations": citations
     }
 
 def generate_from_web(state:AgentState):
@@ -263,7 +277,20 @@ Web search context:
 {web_context}
 """).content.strip()
 
-    return {"answer":answer,"source_used":"web"}
+    citations = []
+    for item in state.get("web_results", []):
+        if isinstance(item, dict):
+            citations.append({
+                "source": item.get("title") or "Web Source",
+                "url": item.get("url", ""),
+                "snippet": (item.get("content") or "")[:260].strip() + ("..." if len(item.get("content", "")) > 260 else "")
+            })
+
+    return {
+        "answer": answer,
+        "source_used": "web",
+        "citations": citations
+    }
 
 def direct_answer(state:AgentState):
 
@@ -272,8 +299,9 @@ def direct_answer(state:AgentState):
     answer = llm().invoke(f"Respond Briefly and naturally.\n Message:{question}").content
 
     return {
-        "answer":answer,
-        "source_used":"direct"
+        "answer": answer,
+        "source_used": "direct",
+        "citations": []
     }
 
 def answer_insufficient(state: AgentState):
@@ -286,6 +314,7 @@ def answer_insufficient(state: AgentState):
     return {
         "answer": answer,
         "source_used": "insufficient_evidence",
+        "citations": []
     }
 
 def build_graph():
@@ -314,21 +343,23 @@ def build_graph():
     graph.add_edge("direct_answer",END)
     graph.add_edge("answer_insufficient",END)
 
+    return graph.compile()
+
 agent = build_graph()
 
 def ask(question:str):
     initial_state = {
-        "question":question,
-        "current_query":"",
-        "kb_docs":[],
-        "web_results":"",
-        "kb_grade":"",
-        "web_grade":"",
-        "answer":"",
-        "source_used":"",
-        "retry_count":0,
-        "citations":[]
+        "question": question,
+        "current_query": question,
+        "kb_docs": [],
+        "web_results": "",
+        "kb_grade": "",
+        "web_grade": "",
+        "answer": "",
+        "source_used": "",
+        "retry_count": 0,
+        "citations": []
     }
 
-    final_state = agent.run(initial_state)
+    final_state = agent.invoke(initial_state)
     return final_state

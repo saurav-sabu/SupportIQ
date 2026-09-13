@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SupportIQ | Enterprise Agentic AI IT Support</title>
+  <meta name="description" content="AI-powered Enterprise IT Support Agent using Agentic RAG, LangGraph, Pinecone, and Tavily web search for grounded troubleshooting.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20%22100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <div class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            <span class="pulse-ring"></span>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">Support<span class="gradient-text">IQ</span></span>
+            <span class="brand-badge">Agentic RAG</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="chat" id="tab-btn-chat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>Support Console</span>
+        </button>
+
+        <button class="nav-item" data-tab="kb" id="tab-btn-kb">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span>Knowledge Base</span>
+          <span class="nav-count" id="kb-count-badge">6</span>
+        </button>
+
+        <button class="nav-item" data-tab="workflow" id="tab-btn-workflow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Agent Flow Visualizer</span>
+        </button>
+
+        <button class="nav-item" data-tab="diagnostics" id="tab-btn-diagnostics">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+          <span>System Health</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Quick Stats Widget -->
+      <div class="sidebar-widget">
+        <div class="widget-title">Engine Architecture</div>
+        <div class="engine-specs">
+          <div class="spec-row">
+            <span class="spec-label">Orchestration</span>
+            <span class="spec-val highlight-blue">LangGraph v1.2</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Vector Store</span>
+            <span class="spec-val">Pinecone Serverless</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Namespace</span>
+            <span class="spec-val code-val" id="sb-namespace">it-support-kb</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Web Fallback</span>
+            <span class="spec-val highlight-amber">Tavily AI Search</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">LLM Provider</span>
+            <span class="spec-val">Groq Cloud</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="system-status-indicator">
+          <span class="status-dot online" id="global-status-dot"></span>
+          <span class="status-text" id="global-status-text">Backend Connected</span>
+        </div>
+        <div class="latency-badge" id="ping-latency">14ms</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-left">
+          <button class="sidebar-toggle" id="sidebar-toggle-btn" title="Toggle Sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="breadcrumb">
+            <span class="breadcrumb-root">SupportIQ Workspace</span>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current" id="breadcrumb-title">AI Support Console</span>
+          </div>
+        </div>
+
+        <div class="top-right">
+          <!-- Live Agent Decision Chip -->
+          <div class="live-router-pill" id="live-router-pill" title="Last query resolution pathway">
+            <span class="pill-dot"></span>
+            <span class="pill-text" id="last-route-label">Engine Ready</span>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <button class="action-btn icon-only" id="theme-toggle-btn" title="Toggle Theme">
+            <svg class="theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <button class="action-btn" id="export-chat-btn" title="Export Conversation">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export</span>
+          </button>
+
+          <button class="action-btn primary-btn" id="new-chat-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>New Session</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Containers -->
+
+      <!-- 1. CHAT VIEW -->
+      <section class="tab-view active" id="view-chat">
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-messages">
+            <!-- Welcome Hero -->
+            <div class="welcome-hero" id="welcome-hero">
+              <div class="hero-badge">
+                <span class="badge-glow"></span>
+                <span>Enterprise Autonomous Agent</span>
+              </div>
+              <h1 class="hero-title">Intelligent IT Support, <span class="gradient-text">Grounded in Knowledge</span></h1>
+              <p class="hero-subtitle">
+                SupportIQ leverages self-correcting Agentic RAG. Queries are intelligently routed to internal Pinecone runbooks, graded for evidence sufficiency, and backed up with live Tavily web search.
+              </p>
+
+              <!-- IT Starters Grid -->
+              <div class="starters-section">
+                <div class="starters-header">
+                  <span>Frequently Handled Incidents</span>
+                  <span class="sub-hint">Click any card to diagnose immediately</span>
+                </div>
+                <div class="starters-grid">
+                  <div class="starter-card" data-prompt="How do I troubleshoot VPN connection failing with Error 800?">
+                    <div class="starter-icon vpn-icon">🌐</div>
+                    <div class="starter-info">
+                      <div class="starter-title">VPN Error 800</div>
+                      <div class="starter-desc">Tunnel server unreachable or PPTP port blocked</div>
+                    </div>
+                  </div>
+
+                  <div class="starter-card" data-prompt="Outlook is repeatedly disconnecting from Microsoft 365 Exchange. How to fix?">
+                    <div class="starter-icon mail-icon">📧</div>
+                    <div class="starter-info">
+                      <div class="starter-title">Outlook Disconnected</div>
+                      <div class="starter-desc">Credential cache, Modern Auth & Autodiscover</div>
+                    </div>
+                  </div>
+
+                  <div class="starter-card" data-prompt="A user account is locked out in Active Directory after multiple attempts. What is the standard unlock and audit procedure?">
+                    <div class="starter-icon key-icon">🔑</div>
+                    <div class="starter-info">
+                      <div class="starter-title">AD Account Lockout</div>
+                      <div class="starter-desc">Security logs, bad pwd count, unlock runbook</div>
+                    </div>
+                  </div>
+
+                  <div class="starter-card" data-prompt="The system prompted for a BitLocker recovery key after a firmware update. How can IT retrieve it safely?">
+                    <div class="starter-icon lock-icon">🛡️</div>
+                    <div class="starter-info">
+                      <div class="starter-title">BitLocker Key Recovery</div>
+                      <div class="starter-desc">Entra ID / Intune recovery key retrieval</div>
+                    </div>
+                  </div>
+
+                  <div class="starter-card" data-prompt="Windows Print Spooler service keeps crashing or stopping automatically. How do I clear the queue and restart it?">
+                    <div class="starter-icon print-icon">🖨️</div>
+                    <div class="starter-info">
+                      <div class="starter-title">Print Spooler Crash</div>
+                      <div class="starter-desc">Clear PRINTERS directory & reset spooler service</div>
+                    </div>
+                  </div>
+
+                  <div class="starter-card" data-prompt="Workstation displays Wi-Fi Connected, No Internet. What are the step-by-step troubleshooting commands?">
+                    <div class="starter-icon wifi-icon">📶</div>
+                    <div class="starter-info">
+                      <div class="starter-title">Wi-Fi No Internet</div>
+                      <div class="starter-desc">DNS flush, TCP/IP stack reset & gateway ping</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Messages Stream Appends Here -->
+          </div>
+
+          <!-- Chat Input Area -->
+          <div class="chat-input-wrapper">
+            <!-- Processing Bar (Hidden by default) -->
+            <div class="reasoning-indicator" id="reasoning-indicator" style="display: none;">
+              <div class="reasoning-spinner"></div>
+              <div class="reasoning-status">
+                <span class="reasoning-step-title" id="reasoning-step-title">Evaluating Agent Decision Graph...</span>
+                <span class="reasoning-sub" id="reasoning-sub">Routing query & checking Pinecone embeddings</span>
+              </div>
+            </div>
+
+            <div class="input-card">
+              <button class="attach-btn" id="attach-btn" title="Upload Document to Knowledge Base">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+              </button>
+
+              <textarea 
+                class="chat-textarea" 
+                id="chat-input" 
+                placeholder="Describe the IT issue, error code, or ask for runbook procedures... (Shift+Enter for new line)"
+                rows="1"
+              ></textarea>
+
+              <button class="send-btn" id="send-btn" title="Send Request">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+
+            <div class="input-hint-row">
+              <span class="hint-item"><kbd>Enter</kbd> to send</span>
+              <span class="hint-item"><kbd>Shift</kbd> + <kbd>Enter</kbd> for newline</span>
+              <span class="hint-item hint-privacy">🔒 Internal Enterprise Grounded</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. KNOWLEDGE BASE VIEW -->
+      <section class="tab-view" id="view-kb" style="display: none;">
+        <div class="kb-management-container">
+          <div class="section-title-row">
+            <div>
+              <h2 class="section-heading">Knowledge Base & Ingestion Hub</h2>
+              <p class="section-sub">Manage enterprise IT runbooks, troubleshoot manuals, and Pinecone vector store index.</p>
+            </div>
+            <div class="section-actions">
+              <button class="action-btn" id="reindex-all-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                <span>Re-index All Runbooks</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Ingestion Dropzone -->
+          <div class="upload-card">
+            <div class="dropzone" id="kb-dropzone">
+              <div class="dropzone-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242M12 12v9m-4-4l4-4 4 4"/>
+                </svg>
+              </div>
+              <div class="dropzone-text">
+                <span class="dropzone-main-text">Drag & drop runbooks here, or <label for="file-upload-input" class="browse-link">browse files</label></span>
+                <span class="dropzone-sub-text">Supported formats: PDF (.pdf), Plain Text (.txt), Markdown (.md)</span>
+              </div>
+              <input type="file" id="file-upload-input" accept=".pdf,.txt,.md" style="display: none;">
+            </div>
+
+            <!-- Upload progress bar -->
+            <div class="upload-progress-container" id="upload-progress-box" style="display: none;">
+              <div class="upload-info">
+                <span class="upload-filename" id="upload-file-name">filename.pdf</span>
+                <span class="upload-percentage" id="upload-pct">0%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar" id="upload-progress-bar" style="width: 0%;"></div>
+              </div>
+              <div class="upload-status-log" id="upload-status-log">Reading and chunking document...</div>
+            </div>
+          </div>
+
+          <!-- Documents List Section -->
+          <div class="documents-section">
+            <div class="documents-header">
+              <div class="docs-header-left">
+                <h3 class="docs-title">Active Knowledge Runbooks</h3>
+                <span class="docs-count-pill" id="docs-total-pill">6 Documents</span>
+              </div>
+              <div class="docs-filter">
+                <input type="text" id="doc-search-input" placeholder="Filter runbooks by name..." class="doc-search">
+              </div>
+            </div>
+
+            <div class="documents-grid" id="documents-grid">
+              <!-- Dynamically populated or pre-rendered cards -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. AGENT FLOW VISUALIZER VIEW -->
+      <section class="tab-view" id="view-workflow" style="display: none;">
+        <div class="visualizer-container">
+          <div class="section-title-row">
+            <div>
+              <h2 class="section-heading">Agentic RAG StateGraph Pipeline</h2>
+              <p class="section-sub">Inspect how SupportIQ orchestrates routing, grading, web retrieval, query rewriting, and synthesis in real-time.</p>
+            </div>
+            <div class="pipeline-legend">
+              <span class="legend-item"><span class="legend-dot active-dot"></span> Active Step</span>
+              <span class="legend-item"><span class="legend-dot kb-dot"></span> KB Grounded</span>
+              <span class="legend-item"><span class="legend-dot web-dot"></span> Web Search</span>
+              <span class="legend-item"><span class="legend-dot loop-dot"></span> Rewrite Loop</span>
+            </div>
+          </div>
+
+          <!-- Interactive Workflow Canvas -->
+          <div class="workflow-canvas">
+            <div class="workflow-flow">
+              <!-- START NODE -->
+              <div class="node-wrapper">
+                <div class="flow-node start-node" id="node-start">
+                  <div class="node-label">START</div>
+                  <div class="node-sub">User Query Ingestion</div>
+                </div>
+                <div class="flow-connector vertical"></div>
+              </div>
+
+              <!-- ROUTE QUESTION -->
+              <div class="node-wrapper">
+                <div class="flow-node router-node" id="node-route">
+                  <div class="node-tag">Router LLM</div>
+                  <div class="node-label">route_question</div>
+                  <div class="node-sub">Evaluate: IT Issue vs. Direct Chat</div>
+                </div>
+                <div class="flow-branches">
+                  <div class="branch-line left">
+                    <span class="branch-label">route == "direct"</span>
+                  </div>
+                  <div class="branch-line right">
+                    <span class="branch-label">route == "kb"</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SPLIT: DIRECT vs KB RETRIEVAL -->
+              <div class="flow-row-split">
+                <!-- Left Branch: Direct Answer -->
+                <div class="flow-column direct-column">
+                  <div class="flow-node direct-node" id="node-direct">
+                    <div class="node-tag">Direct LLM</div>
+                    <div class="node-label">direct_answer</div>
+                    <div class="node-sub">Conversational Greeting / Response</div>
+                  </div>
+                </div>
+
+                <!-- Right Branch: KB Ingestion & Evaluation -->
+                <div class="flow-column kb-column">
+                  <div class="flow-node kb-node" id="node-retrieve-kb">
+                    <div class="node-tag">Pinecone VectorStore</div>
+                    <div class="node-label">retrieve_kb</div>
+                    <div class="node-sub">Cosine similarity search (top_k=4)</div>
+                  </div>
+
+                  <div class="flow-connector vertical"></div>
+
+                  <div class="flow-node grade-node" id="node-grade-kb">
+                    <div class="node-tag">Evidence Grader</div>
+                    <div class="node-label">grade_kb_evidence</div>
+                    <div class="node-sub">Grade: good vs. weak</div>
+                  </div>
+
+                  <div class="flow-branches">
+                    <div class="branch-line left">
+                      <span class="branch-label">grade == "good"</span>
+                    </div>
+                    <div class="branch-line right">
+                      <span class="branch-label">grade == "weak"</span>
+                    </div>
+                  </div>
+
+                  <!-- KB Success vs Web Fallback -->
+                  <div class="flow-row-split inner-split">
+                    <!-- KB Success -->
+                    <div class="flow-column">
+                      <div class="flow-node kb-success-node" id="node-gen-kb">
+                        <div class="node-tag">Grounded Synthesizer</div>
+                        <div class="node-label">generate_from_kb</div>
+                        <div class="node-sub">Answer using verified runbook evidence</div>
+                      </div>
+                    </div>
+
+                    <!-- Web Search Fallback -->
+                    <div class="flow-column web-column">
+                      <div class="flow-node web-node" id="node-search-web">
+                        <div class="node-tag">Tavily Tool</div>
+                        <div class="node-label">search_web</div>
+                        <div class="node-sub">Live search for IT solutions</div>
+                      </div>
+
+                      <div class="flow-connector vertical"></div>
+
+                      <div class="flow-node grade-node" id="node-grade-web">
+                        <div class="node-tag">Web Grader</div>
+                        <div class="node-label">grade_web_evidence</div>
+                        <div class="node-sub">Assess search relevance</div>
+                      </div>
+
+                      <div class="flow-branches">
+                        <div class="branch-line left">
+                          <span class="branch-label">grade == "good"</span>
+                        </div>
+                        <div class="branch-line right">
+                          <span class="branch-label">retry &lt; max</span>
+                        </div>
+                      </div>
+
+                      <div class="flow-row-split inner-split-2">
+                        <div class="flow-column">
+                          <div class="flow-node web-success-node" id="node-gen-web">
+                            <div class="node-tag">Web Synthesizer</div>
+                            <div class="node-label">generate_from_web</div>
+                            <div class="node-sub">Answer using web search context</div>
+                          </div>
+                        </div>
+
+                        <div class="flow-column">
+                          <div class="flow-node loop-node" id="node-rewrite">
+                            <div class="node-tag">Query Rewriter</div>
+                            <div class="node-label">rewrite_query</div>
+                            <div class="node-sub">Refine query & retry retrieval</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- END NODE -->
+              <div class="node-wrapper end-wrapper">
+                <div class="flow-connector vertical"></div>
+                <div class="flow-node end-node" id="node-end">
+                  <div class="node-label">END</div>
+                  <div class="node-sub">Structured Response Delivered with Citations</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. SYSTEM HEALTH VIEW -->
+      <section class="tab-view" id="view-diagnostics" style="display: none;">
+        <div class="diagnostics-container">
+          <div class="section-title-row">
+            <div>
+              <h2 class="section-heading">System Diagnostics & Infrastructure</h2>
+              <p class="section-sub">Live health metrics, vector database telemetry, and model configuration parameters.</p>
+            </div>
+            <button class="action-btn" id="refresh-diag-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              <span>Refresh Metrics</span>
+            </button>
+          </div>
+
+          <!-- Diagnostics Cards Grid -->
+          <div class="diag-grid">
+            <div class="diag-card">
+              <div class="diag-card-header">
+                <div class="diag-icon-wrapper blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                    <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                    <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                  </svg>
+                </div>
+                <div>
+                  <div class="diag-metric-title">Vector Database</div>
+                  <div class="diag-metric-status text-emerald">Connected (Healthy)</div>
+                </div>
+              </div>
+              <div class="diag-body">
+                <div class="diag-row"><span class="label">Provider</span><span class="value">Pinecone Serverless</span></div>
+                <div class="diag-row"><span class="label">Index Name</span><span class="value code-val" id="diag-index">supportiq</span></div>
+                <div class="diag-row"><span class="label">Namespace</span><span class="value code-val" id="diag-namespace">it-support-kb</span></div>
+                <div class="diag-row"><span class="label">Dimension</span><span class="value">3072</span></div>
+                <div class="diag-row"><span class="label">Metric</span><span class="value">Cosine</span></div>
+              </div>
+            </div>
+
+            <div class="diag-card">
+              <div class="diag-card-header">
+                <div class="diag-icon-wrapper purple">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="diag-metric-title">Model Inference</div>
+                  <div class="diag-metric-status text-emerald">Groq Cloud Active</div>
+                </div>
+              </div>
+              <div class="diag-body">
+                <div class="diag-row"><span class="label">LLM Model</span><span class="value code-val" id="diag-model">openai/gpt-oss-120b</span></div>
+                <div class="diag-row"><span class="label">Embedding</span><span class="value code-val" id="diag-embed">gemini-embedding-2-preview</span></div>
+                <div class="diag-row"><span class="label">Temperature</span><span class="value">0.0 (Deterministic)</span></div>
+                <div class="diag-row"><span class="label">Top-K Retrieval</span><span class="value" id="diag-topk">4 Chunks</span></div>
+                <div class="diag-row"><span class="label">Max Retries</span><span class="value" id="diag-retries">1 Loop</span></div>
+              </div>
+            </div>
+
+            <div class="diag-card">
+              <div class="diag-card-header">
+                <div class="diag-icon-wrapper amber">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="diag-metric-title">Fallback & Telemetry</div>
+                  <div class="diag-metric-status text-emerald">Tavily & LangSmith Ready</div>
+                </div>
+              </div>
+              <div class="diag-body">
+                <div class="diag-row"><span class="label">Search Provider</span><span class="value">Tavily Search API</span></div>
+                <div class="diag-row"><span class="label">Web Topic</span><span class="value">General / IT</span></div>
+                <div class="diag-row"><span class="label">Tracing</span><span class="value text-emerald">Enabled (LangSmith)</span></div>
+                <div class="diag-row"><span class="label">Project</span><span class="value">SupportIQ</span></div>
+                <div class="diag-row"><span class="label">Environment</span><span class="value badge-env" id="diag-env">development</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuration Settings Card -->
+          <div class="admin-settings-card">
+            <h3 class="admin-settings-title">Admin API Authentication</h3>
+            <p class="admin-settings-sub">The API key is required when uploading or reindexing knowledge base runbooks.</p>
+            <div class="admin-key-input-row">
+              <input type="password" id="admin-api-key-input" class="admin-key-input" value="supportiq-admin-2026" placeholder="Enter Admin API Key">
+              <button class="action-btn" id="toggle-key-visibility">Show</button>
+              <button class="action-btn primary-btn" id="save-admin-key-btn">Save Key</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Citation Inspection Drawer / Modal -->
+    <div class="citation-modal-overlay" id="citation-modal-overlay" style="display: none;">
+      <div class="citation-modal">
+        <div class="citation-modal-header">
+          <div class="modal-title-row">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <h3 class="citation-modal-title">Grounded Evidence & Citations</h3>
+          </div>
+          <button class="close-modal-btn" id="close-citation-modal">&times;</button>
+        </div>
+        <div class="citation-modal-body" id="citation-modal-body">
+          <!-- Citations Content injected dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
